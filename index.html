@@ -28,10 +28,64 @@
             const [orderSent, setOrderSent] = useState(false);
             const [user, setUser] = useState({ name: '', phone: '', address: '' });
 
+            function WahranStore() {
+            const [cart, setCart] = useState([]);
+            // ... (باقي الحالات كما هي)
+
             const products = [
-                { id: 1, name: 'ساعة ذكية برو', price: 15000, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500' },
-                { id: 2, name: 'سماعات لاسلكية', price: 22000, img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500' },
-                { id: 3, name: 'حقيبة سفر فاخرة', price: 12000, img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500' }
+                { id: 1, name: 'ساعة ذكية برو', price: 15000, oldPrice: 19000, img: 'watch.jpg' },
+                { id: 2, name: 'سماعات لاسلكية', price: 22000, oldPrice: 28000, img: 'headphones.png' },
+                { id: 3, name: 'حقيبة سفر فاخرة', price: 12000, oldPrice: 15500, img: 'bag.jpg' }
+            ];
+
+            // قسم آراء الزبائن
+            const reviews = [
+                { id: 1, name: "أحمد من وهران", text: "جودة ممتازة وتوصيل سريع جداً، بارك الله فيكم.", stars: 5 },
+                { id: 2, name: "سارة من سيدي بلعباس", text: "المنتج مطابق تماماً للصور، تعامل راقي.", stars: 5 }
+            ];
+
+            return (
+                <div className="min-h-screen">
+                    {/* ... (Header و Hero كما هما) ... */}
+
+                    {/* قائمة المنتجات مع السعر المشطوب */}
+                    <main className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {products.map(p => (
+                            <div key={p.id} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition relative">
+                                {p.oldPrice && <span className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold z-10">تخفيض!</span>}
+                                <img src={p.img} className="w-full h-56 object-cover" />
+                                <div className="p-6">
+                                    <h3 className="text-xl font-bold mb-2">{p.name}</h3>
+                                    <div className="flex flex-col mb-4">
+                                        {p.oldPrice && <span className="text-sm text-slate-400 line-through">{p.oldPrice.toLocaleString()} د.ج</span>}
+                                        <span className="text-2xl font-black text-blue-600">{p.price.toLocaleString()} د.ج</span>
+                                    </div>
+                                    <button onClick={() => addToCart(p)} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">إضافة للسلة</button>
+                                </div>
+                            </div>
+                        ))}
+                    </main>
+
+                    {/* قسم آراء الزبائن الجديد */}
+                    <section className="bg-slate-100 py-16 px-6">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <h2 className="text-3xl font-bold mb-10 text-slate-800">ماذا يقول زبائننا؟</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {reviews.map(r => (
+                                    <div key={r.id} className="bg-white p-6 rounded-2xl shadow-sm text-right">
+                                        <div className="text-yellow-400 mb-2">{"⭐".repeat(r.stars)}</div>
+                                        <p className="text-slate-600 italic mb-4">"{r.text}"</p>
+                                        <p className="font-bold text-blue-600">— {r.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ... (Footer والـ Sidebar) ... */}
+                </div>
+            );
+        }
             ];
 
             const addToCart = (p) => {
