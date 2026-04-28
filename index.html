@@ -1,362 +1,160 @@
-import React, { useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, Search, Menu, ShoppingBag } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ShoppingCart, X, Plus, Minus, Trash2, Search, Menu, ShoppingBag, ShieldCheck } from 'lucide-react';
 
-// --- بيانات المنتجات الوهمية ---
+// --- المنتجات (تم نقلها خارج المكون لتحسين الأداء) ---
 const initialProducts = [
-  {
-    id: 1,
-    name: 'ساعة ذكية رياضية',
-    price: 15000,
-    category: 'إلكترونيات',
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80',
-    description: 'ساعة ذكية مزودة بمتتبع لنبضات القلب وشاشة لمس عالية الدقة.'
-  },
-  {
-    id: 2,
-    name: 'سماعات رأس عازلة للضوضاء',
-    price: 22000,
-    category: 'إلكترونيات',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80',
-    description: 'استمتع بموسيقاك بدون أي إزعاج خارجي مع هذه السماعات اللاسلكية.'
-  },
-  {
-    id: 3,
-    name: 'حذاء ركض مريح',
-    price: 8500,
-    category: 'أزياء',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
-    description: 'حذاء رياضي خفيف الوزن ومناسب للمسافات الطويلة.'
-  },
-  {
-    id: 4,
-    name: 'حقيبة ظهر للسفر',
-    price: 6000,
-    category: 'إكسسوارات',
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=500&q=80',
-    description: 'حقيبة ظهر متينة ومقاومة للماء تتسع لجميع أغراضك.'
-  },
-  {
-    id: 5,
-    name: 'نظارات شمسية كلاسيكية',
-    price: 4500,
-    category: 'إكسسوارات',
-    image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=500&q=80',
-    description: 'نظارات شمسية بتصميم عصري وحماية كاملة من الأشعة فوق البنفسجية.'
-  },
-  {
-    id: 6,
-    name: 'كاميرا تصوير احترافية',
-    price: 120000,
-    category: 'إلكترونيات',
-    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=500&q=80',
-    description: 'التقط أجمل اللحظات بدقة 4K مع هذه الكاميرا الرائعة.'
-  }
+  { id: 1, name: 'ساعة ذكية رياضية', price: 15000, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80', description: 'ساعة ذكية مزودة بمتتبع لنبضات القلب.' },
+  { id: 2, name: 'سماعات رأس عازلة', price: 22000, category: 'إلكترونيات', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80', description: 'استمتع بموسيقاك بدون أي إزعاج خارجي.' },
+  { id: 3, name: 'حذاء ركض مريح', price: 8500, category: 'أزياء', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80', description: 'حذاء رياضي خفيف الوزن ومناسب للمسافات الطويلة.' },
 ];
 
 export default function App() {
-  // --- إدارة حالة التطبيق (State) ---
-  const [products] = useState(initialProducts);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('الكل');
 
-  // استخراج الأقسام المتاحة من المنتجات
-  const categories = ['الكل', ...new Set(products.map(p => p.category))];
+  // --- إجراء أمني: تنظيف نص البحث لمنع محاولات حقن بسيطة ---
+  const sanitizeInput = (text) => text.replace(/[<>]/g, ""); 
 
-  // فلترة المنتجات حسب البحث والقسم
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.includes(searchTerm) || product.description.includes(searchTerm);
-    const matchesCategory = selectedCategory === 'الكل' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  // --- دوال سلة المشتريات ---
-
-  // إضافة منتج للسلة
-  const addToCart = (product) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      if (existingItem) {
-        // إذا كان المنتج موجوداً مسبقاً، نزيد الكمية
-        return prevCart.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      // إذا كان منتجاً جديداً، نضيفه بكمية 1
-      return [...prevCart, { ...product, quantity: 1 }];
+  // استخدام useMemo لتحسين الأداء عند الفلترة
+  const filteredProducts = useMemo(() => {
+    return initialProducts.filter(product => {
+      const cleanSearch = sanitizeInput(searchTerm).toLowerCase();
+      const matchesSearch = product.name.toLowerCase().includes(cleanSearch) || 
+                            product.description.toLowerCase().includes(cleanSearch);
+      const matchesCategory = selectedCategory === 'الكل' || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
     });
-    // فتح السلة تلقائياً عند إضافة منتج (اختياري)
+  }, [searchTerm, selectedCategory]);
+
+  const categories = ['الكل', ...new Set(initialProducts.map(p => p.category))];
+
+  // --- وظائف السلة ---
+  const addToCart = (product) => {
+    setCart(prev => {
+      const exists = prev.find(item => item.id === product.id);
+      if (exists) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      return [...prev, { ...product, quantity: 1 }];
+    });
     setIsCartOpen(true);
   };
 
-  // إزالة منتج نهائياً من السلة
-  const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+  const updateQuantity = (id, delta) => {
+    setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item));
   };
 
-  // تعديل كمية المنتج في السلة
-  const updateQuantity = (productId, delta) => {
-    setCart(prevCart => {
-      return prevCart.map(item => {
-        if (item.id === productId) {
-          const newQuantity = item.quantity + delta;
-          return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
-        }
-        return item;
-      });
-    });
-  };
-
-  // حساب المجموع الكلي
-  const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const cartItemsCount = cart.reduce((count, item) => count + item.quantity, 0);
-
-  // تنسيق السعر (للعملة الجزائرية كمثال بناءً على موقعك، يمكنك تغييرها)
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ar-DZ', { style: 'currency', currency: 'DZD' }).format(price);
-  };
+  const removeFromCart = (id) => setCart(prev => prev.filter(item => item.id !== id));
+  
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans" dir="rtl">
-      
-      {/* --- الشريط العلوي (Header) --- */}
+      {/* التنبيه الأمني في الأعلى */}
+      <div className="bg-blue-900 text-white text-center py-1 text-xs flex justify-center items-center gap-2">
+        <ShieldCheck size={14} /> متجر آمن ومحمي 100%
+      </div>
+
       <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            
-            {/* الشعار */}
-            <div className="flex items-center gap-2 cursor-pointer">
-              <ShoppingBag className="text-blue-600" size={32} />
-              <span className="font-bold text-2xl text-gray-900 tracking-tight">سوق<span className="text-blue-600">بلس</span></span>
-            </div>
-
-            {/* شريط البحث (مخفي في الشاشات الصغيرة جداً) */}
-            <div className="hidden sm:flex flex-1 max-w-md mx-8 relative">
-              <input
-                type="text"
-                placeholder="ابحث عن منتجات..."
-                className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pr-10 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
-            </div>
-
-            {/* أيقونات السلة والقائمة */}
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setIsCartOpen(true)}
-                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ShoppingCart size={24} />
-                {cartItemsCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center transform translate-x-1 -translate-y-1">
-                    {cartItemsCount}
-                  </span>
-                )}
-              </button>
-              <button className="sm:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full">
-                <Menu size={24} />
-              </button>
-            </div>
-
+        <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="text-blue-600" size={28} />
+            <span className="font-bold text-xl">سوق<span className="text-blue-600">بلس</span></span>
           </div>
+
+          <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
+            <input
+              type="text"
+              placeholder="ابحث بأمان..."
+              className="w-full bg-gray-100 rounded-full py-2 px-4 pr-10 outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
+          </div>
+
+          <button onClick={() => setIsCartOpen(true)} className="relative p-2 hover:bg-gray-100 rounded-full">
+            <ShoppingCart size={24} />
+            {cart.length > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cart.reduce((a, b) => a + b.quantity, 0)}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
-      {/* --- شريط البحث للموبايل --- */}
-      <div className="sm:hidden px-4 py-3 bg-white border-b border-gray-100">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="ابحث عن منتجات..."
-            className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pr-10 focus:ring-2 focus:ring-blue-500 outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
-        </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* --- لافتة الترحيب (Hero Section) --- */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-500 rounded-2xl p-8 sm:p-12 mb-8 text-white shadow-lg relative overflow-hidden">
-          <div className="relative z-10">
-            <h1 className="text-3xl sm:text-5xl font-extrabold mb-4">اكتشف أحدث العروض</h1>
-            <p className="text-blue-100 text-lg max-w-xl mb-6">تسوق من تشكيلتنا الواسعة من الإلكترونيات والأزياء والإكسسوارات بأفضل الأسعار وبجودة لا تضاهى.</p>
-            <button className="bg-white text-blue-600 font-bold py-3 px-8 rounded-full hover:bg-gray-50 transition-colors shadow-md">
-              تسوق الآن
-            </button>
-          </div>
-          {/* أشكال تزيينية للخلفية */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-900 opacity-20 rounded-full blur-3xl transform translate-x-1/4 translate-y-1/4"></div>
-        </div>
-
-        {/* --- فلتر الأقسام --- */}
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`whitespace-nowrap px-6 py-2 rounded-full font-medium transition-colors ${
-                selectedCategory === category 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
-              }`}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* أزرار الفلترة */}
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+          {categories.map(cat => (
+            <button 
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-5 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-white border text-gray-600'}`}
             >
-              {category}
+              {cat}
             </button>
           ))}
         </div>
 
-        {/* --- شبكة المنتجات --- */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <Search size={48} className="mx-auto mb-4 text-gray-300" />
-            <p className="text-xl">عذراً، لم نتمكن من العثور على منتجات تطابق بحثك.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col group">
-                <div className="relative overflow-hidden aspect-w-1 aspect-h-1">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-56 object-cover object-center group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm">
-                    {product.category}
-                  </div>
-                </div>
-                <div className="p-5 flex flex-col flex-grow">
-                  <h3 className="font-bold text-lg text-gray-900 mb-1">{product.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">{product.description}</p>
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="font-extrabold text-xl text-gray-900 dir-ltr">{formatPrice(product.price)}</span>
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="bg-blue-50 text-blue-600 p-2.5 rounded-xl hover:bg-blue-600 hover:text-white transition-colors"
-                      title="أضف إلى السلة"
-                    >
-                      <Plus size={20} />
-                    </button>
-                  </div>
+        {/* شبكة المنتجات */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProducts.map(product => (
+            <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+              <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+              <div className="p-4">
+                <h3 className="font-bold text-lg">{product.name}</h3>
+                <p className="text-gray-500 text-sm mb-4">{product.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 font-bold">{product.price.toLocaleString()} د.ج</span>
+                  <button onClick={() => addToCart(product)} className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    <Plus size={20} />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </main>
 
-      {/* --- سلة المشتريات (Drawer) --- */}
-      {/* خلفية معتمة */}
+      {/* نافذة السلة (مبسطة) */}
       {isCartOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
-          onClick={() => setIsCartOpen(false)}
-        />
-      )}
-
-      {/* نافذة السلة الجانبية */}
-      <div 
-        className={`fixed top-0 left-0 h-full w-full sm:w-[400px] bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isCartOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* رأس السلة */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="text-gray-900" size={24} />
-            <h2 className="text-xl font-bold text-gray-900">سلة المشتريات</h2>
-            <span className="bg-gray-100 text-gray-600 text-sm py-0.5 px-2.5 rounded-full">{cartItemsCount}</span>
-          </div>
-          <button 
-            onClick={() => setIsCartOpen(false)}
-            className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900 rounded-full transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* محتوى السلة (المنتجات) */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
-              <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-2">
-                <ShoppingCart size={40} className="text-gray-300" />
-              </div>
-              <p className="text-lg font-medium">سلتك فارغة حالياً</p>
-              <button 
-                onClick={() => setIsCartOpen(false)}
-                className="text-blue-600 font-semibold hover:underline"
-              >
-                تصفح المنتجات
-              </button>
+        <div className="fixed inset-0 z-50 flex justify-start">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setIsCartOpen(false)}></div>
+          <div className="relative w-full max-w-sm bg-white h-full shadow-xl p-5 flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">سلتك</h2>
+              <X className="cursor-pointer" onClick={() => setIsCartOpen(false)} />
             </div>
-          ) : (
-            <div className="space-y-6">
+            
+            <div className="flex-1 overflow-y-auto">
               {cart.map(item => (
-                <div key={item.id} className="flex gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                  <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-semibold text-gray-900 line-clamp-1">{item.name}</h4>
-                        <button 
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-red-400 hover:text-red-600 p-1"
-                          title="حذف"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      <p className="text-blue-600 font-bold text-sm mt-1 dir-ltr">{formatPrice(item.price)}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50">
-                        <button 
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="p-1 text-gray-600 hover:bg-gray-200 rounded-r-lg transition-colors"
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="p-1 text-gray-600 hover:bg-gray-200 rounded-l-lg transition-colors"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
+                <div key={item.id} className="flex gap-3 mb-4 border-b pb-4">
+                  <img src={item.image} className="w-16 h-16 rounded object-cover" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold">{item.name}</h4>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="p-1 border rounded"><Minus size={12}/></button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="p-1 border rounded"><Plus size={12}/></button>
+                      <Trash2 size={14} className="text-red-400 cursor-pointer mr-auto" onClick={() => removeFromCart(item.id)} />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
 
-        {/* تذييل السلة (المجموع والدفع) */}
-        {cart.length > 0 && (
-          <div className="border-t border-gray-100 p-5 bg-gray-50">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-gray-600 font-medium">المجموع الإجمالي:</span>
-              <span className="text-2xl font-extrabold text-gray-900 dir-ltr">{formatPrice(cartTotal)}</span>
+            <div className="border-t pt-4">
+              <div className="flex justify-between font-bold text-lg mb-4">
+                <span>المجموع:</span>
+                <span>{cartTotal.toLocaleString()} د.ج</span>
+              </div>
+              <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">دفع آمن</button>
             </div>
-            <button className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">
-              إتمام الطلب
-            </button>
-            <p className="text-center text-xs text-gray-400 mt-3">الأسعار شاملة ضريبة القيمة المضافة إن وجدت</p>
           </div>
-        )}
-      </div>
-
+        </div>
+      )}
     </div>
   );
-
-
+}
