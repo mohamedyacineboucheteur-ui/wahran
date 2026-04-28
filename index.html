@@ -53,6 +53,40 @@
 
             // إرسال الطلب (Security Check & Order Logic)
             const handleOrder = (e) => {
+                const handleOrder = (e) => {
+    e.preventDefault();
+
+    // 1. تنظيف بيانات الزبون (إجراء أمني)
+    const cleanName = formData.name.replace(/[<>]/g, "");
+    const cleanPhone = formData.phone.replace(/[<>]/g, "");
+    const cleanAddress = formData.address.replace(/[<>]/g, "");
+
+    // 2. تجهيز قائمة المنتجات للرسالة
+    const productList = cart.map(item => `- ${item.name} (${item.price} د.ج)`).join('\n');
+    
+    // 3. صياغة نص الرسالة
+    const message = `*طلب جديد من المتجر* 🛒\n\n` +
+                    `*الاسم:* ${cleanName}\n` +
+                    `*الهاتف:* ${cleanPhone}\n` +
+                    `*العنوان:* ${cleanAddress}\n\n` +
+                    `*المنتجات:*\n${productList}\n\n` +
+                    `*المجموع الكلي:* ${totalPrice.toLocaleString()} د.ج`;
+
+    // 4. ترميز الرسالة لرابط URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // 5. رقم الواتساب الخاص بك (اكتب رقمك هنا بالصيغة الدولية بدون +)
+    // مثال للجزائر: 213661000000
+    const myPhoneNumber = "213658900112"; 
+
+    // 6. فتح واتساب في نافذة جديدة
+    window.open(`https://wa.me/${myPhoneNumber}?text=${encodedMessage}`, '_blank');
+
+    // إتمام العملية في الموقع
+    setOrderComplete(true);
+    setCart([]);
+    setIsCartOpen(false);
+};
                 e.preventDefault();
                 // تنظيف البيانات لمنع XSS
                 const cleanName = formData.name.replace(/[<>]/g, "");
