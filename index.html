@@ -3,45 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوق بلس | متجر إلكتروني متكامل</title>
-    
+    <title>سوق بلس | متجر إلكتروني آمن</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script>
-        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
-        var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
-        j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','GTM-XXXXXXX');
-    </script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState } = React;
 
-        // --- مكوّن المتجر الرئيسي ---
         function StoreApp() {
             const [cart, setCart] = useState([]);
             const [isCartOpen, setIsCartOpen] = useState(false);
             const [orderComplete, setOrderComplete] = useState(false);
             const [formData, setFormData] = useState({ name: '', phone: '', address: '' });
 
-            // بيانات المنتجات (يمكنك تعديلها هنا)
             const products = [
-                { id: 1, name: 'ساعة ذكية برو', price: 15000, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', category: 'إلكترونيات' },
-                { id: 2, name: 'سماعات لاسلكية', price: 22000, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400', category: 'إلكترونيات' },
-                { id: 3, name: 'حقيبة سفر جلدية', price: 12000, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400', category: 'إكسسوارات' }
+                { id: 1, name: 'ساعة ذكية برو', price: 15000, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400' },
+                { id: 2, name: 'سماعات لاسلكية', price: 22000, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
+                { id: 3, name: 'حقيبة سفر جلدية', price: 12000, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400' }
             ];
 
-            // --- إجراءات أمنية وتتبع ---
             const addToCart = (product) => {
                 setCart([...cart, { ...product, cartId: Date.now() }]);
-                // تتبع الحدث
-                window.dataLayer?.push({ 'event': 'add_to_cart', 'product_name': product.name });
                 setIsCartOpen(true);
             };
 
@@ -51,128 +38,88 @@
 
             const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
-            // إرسال الطلب (Security Check & Order Logic)
+            // --- الدالة المحدثة للتحويل إلى واتساب ---
             const handleOrder = (e) => {
-                const handleOrder = (e) => {
-    e.preventDefault();
-
-    // 1. تنظيف بيانات الزبون (إجراء أمني)
-    const cleanName = formData.name.replace(/[<>]/g, "");
-    const cleanPhone = formData.phone.replace(/[<>]/g, "");
-    const cleanAddress = formData.address.replace(/[<>]/g, "");
-
-    // 2. تجهيز قائمة المنتجات للرسالة
-    const productList = cart.map(item => `- ${item.name} (${item.price} د.ج)`).join('\n');
-    
-    // 3. صياغة نص الرسالة
-    const message = `*طلب جديد من المتجر* 🛒\n\n` +
-                    `*الاسم:* ${cleanName}\n` +
-                    `*الهاتف:* ${cleanPhone}\n` +
-                    `*العنوان:* ${cleanAddress}\n\n` +
-                    `*المنتجات:*\n${productList}\n\n` +
-                    `*المجموع الكلي:* ${totalPrice.toLocaleString()} د.ج`;
-
-    // 4. ترميز الرسالة لرابط URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // 5. رقم الواتساب الخاص بك (اكتب رقمك هنا بالصيغة الدولية بدون +)
-    // مثال للجزائر: 213661000000
-    const myPhoneNumber = "213658900112"; 
-
-    // 6. فتح واتساب في نافذة جديدة
-    window.open(`https://wa.me/${myPhoneNumber}?text=${encodedMessage}`, '_blank');
-
-    // إتمام العملية في الموقع
-    setOrderComplete(true);
-    setCart([]);
-    setIsCartOpen(false);
-};
                 e.preventDefault();
-                // تنظيف البيانات لمنع XSS
+
+                // 1. تنظيف البيانات (Security)
                 const cleanName = formData.name.replace(/[<>]/g, "");
-                
-                console.log("إرسال طلب جديد لـ:", cleanName);
+                const cleanPhone = formData.phone.replace(/[<>]/g, "");
+                const cleanAddress = formData.address.replace(/[<>]/g, "");
+
+                // 2. تجهيز نص الرسالة
+                const productList = cart.map(item => `- ${item.name} (${item.price} د.ج)`).join('\n');
+                const message = `*طلب جديد من المتجر* 🛒\n\n` +
+                                `*الاسم:* ${cleanName}\n` +
+                                `*الهاتف:* ${cleanPhone}\n` +
+                                `*العنوان:* ${cleanAddress}\n\n` +
+                                `*المنتجات:*\n${productList}\n\n` +
+                                `*المجموع:* ${totalPrice.toLocaleString()} د.ج`;
+
+                // 3. الرقم الخاص بك
+                const myPhoneNumber = "213658900112"; 
+
+                // 4. فتح رابط واتساب
+                const whatsappUrl = `https://wa.me/${myPhoneNumber}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+
                 setOrderComplete(true);
                 setCart([]);
                 setIsCartOpen(false);
             };
 
             return (
-                <div className="min-h-screen">
-                    {/* Header */}
-                    <header className="bg-white shadow-sm sticky top-0 z-30 p-4">
-                        <div className="max-w-6xl mx-auto flex justify-between items-center">
-                            <h1 className="text-2xl font-bold text-blue-700">سوق بلس</h1>
-                            <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-slate-100 rounded-full">
-                                🛒 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cart.length}</span>
-                            </button>
-                        </div>
+                <div className="min-h-screen pb-10">
+                    <header className="bg-white shadow-sm sticky top-0 z-30 p-4 flex justify-between items-center">
+                        <h1 className="text-2xl font-bold text-blue-700">سوق بلس</h1>
+                        <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-slate-100 rounded-full">
+                            🛒 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cart.length}</span>
+                        </button>
                     </header>
 
-                    {/* Hero Section */}
-                    <section className="bg-blue-600 text-white py-16 px-4 text-center">
-                        <h2 className="text-4xl font-extrabold mb-4">اكتشف أفضل المنتجات</h2>
-                        <p className="text-blue-100">تسوق آمن وتوصيل سريع لباب منزلك</p>
+                    <section className="bg-blue-600 text-white py-12 px-4 text-center">
+                        <h2 className="text-3xl font-bold">تسوق بضمان وأمان</h2>
+                        <p className="mt-2 opacity-90 text-sm">اطلب الآن والدفع عند الاستلام</p>
                     </section>
 
-                    {/* Products Grid */}
-                    <main className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <main className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         {products.map(p => (
-                            <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition">
-                                <img src={p.image} alt={p.name} className="w-full h-56 object-cover" />
-                                <div className="p-5">
-                                    <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">{p.category}</span>
-                                    <h3 className="text-xl font-bold mt-1">{p.name}</h3>
-                                    <div className="flex justify-between items-center mt-6">
-                                        <span className="text-2xl font-black text-slate-800">{p.price.toLocaleString()} د.ج</span>
-                                        <button onClick={() => addToCart(p)} className="bg-blue-600 text-white px-6 py-2 rounded-xl hover:bg-blue-700 font-bold transition">إضافة</button>
+                            <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                                <img src={p.image} className="w-full h-48 object-cover" />
+                                <div className="p-4">
+                                    <h3 className="text-lg font-bold">{p.name}</h3>
+                                    <div className="flex justify-between items-center mt-4">
+                                        <span className="text-xl font-bold text-blue-600">{p.price.toLocaleString()} د.ج</span>
+                                        <button onClick={() => addToCart(p)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">إضافة</button>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </main>
 
-                    {/* Cart Sidebar (Drawer) */}
+                    {/* Cart Sidebar */}
                     {isCartOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
-                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
                             <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 flex flex-col overflow-y-auto">
-                                <div className="flex justify-between items-center border-b pb-4 mb-4">
-                                    <h2 className="text-2xl font-bold">سلتك</h2>
-                                    <button onClick={() => setIsCartOpen(false)} className="text-2xl">✕</button>
-                                </div>
-
-                                {cart.length === 0 ? (
-                                    <p className="text-center text-slate-400 py-10">السلة فارغة</p>
-                                ) : (
+                                <h2 className="text-2xl font-bold mb-4 border-b pb-2">سلتك</h2>
+                                {cart.length === 0 ? <p className="text-gray-400">السلة فارغة</p> : (
                                     <>
-                                        <div className="flex-1">
+                                        <div className="flex-1 space-y-4">
                                             {cart.map(item => (
-                                                <div key={item.cartId} className="flex gap-4 mb-4 items-center bg-slate-50 p-3 rounded-lg">
-                                                    <img src={item.image} className="w-16 h-16 rounded object-cover" />
-                                                    <div className="flex-1">
-                                                        <h4 className="font-bold">{item.name}</h4>
-                                                        <p className="text-blue-600 font-bold">{item.price} د.ج</p>
-                                                    </div>
-                                                    <button onClick={() => removeFromCart(item.cartId)} className="text-red-500 text-sm">حذف</button>
+                                                <div key={item.cartId} className="flex justify-between bg-slate-50 p-2 rounded">
+                                                    <span>{item.name}</span>
+                                                    <button onClick={() => removeFromCart(item.cartId)} className="text-red-500 text-xs italic underline">حذف</button>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="border-t pt-4">
-                                            <div className="flex justify-between text-xl font-bold mb-6">
-                                                <span>الإجمالي:</span>
-                                                <span>{totalPrice.toLocaleString()} د.ج</span>
-                                            </div>
-                                            
-                                            {/* Order Form */}
-                                            <form onSubmit={handleOrder} className="space-y-4">
-                                                <input required type="text" placeholder="الاسم الكامل" className="w-full p-3 border rounded-xl" 
-                                                    onChange={e => setFormData({...formData, name: e.target.value})} />
-                                                <input required type="tel" placeholder="رقم الهاتف" className="w-full p-3 border rounded-xl" 
-                                                    onChange={e => setFormData({...formData, phone: e.target.value})} />
-                                                <textarea required placeholder="العنوان بالتفصيل" className="w-full p-3 border rounded-xl" 
-                                                    onChange={e => setFormData({...formData, address: e.target.value})}></textarea>
-                                                <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700">تأكيد الطلب الآن</button>
+                                        <div className="mt-6 border-t pt-4">
+                                            <p className="text-xl font-bold mb-4 text-left italic">المجموع: {totalPrice.toLocaleString()} د.ج</p>
+                                            <form onSubmit={handleOrder} className="space-y-3">
+                                                <input required type="text" placeholder="الاسم" className="w-full p-2 border rounded" onChange={e => setFormData({...formData, name: e.target.value})} />
+                                                <input required type="tel" placeholder="الهاتف" className="w-full p-2 border rounded" onChange={e => setFormData({...formData, phone: e.target.value})} />
+                                                <textarea required placeholder="العنوان" className="w-full p-2 border rounded" onChange={e => setFormData({...formData, address: e.target.value})}></textarea>
+                                                <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow-lg">إتمام الطلب عبر WhatsApp</button>
                                             </form>
                                         </div>
                                     </>
@@ -181,22 +128,16 @@
                         </div>
                     )}
 
-                    {/* Thank You Message */}
                     {orderComplete && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-blue-900/90" onClick={() => setOrderComplete(false)}></div>
-                            <div className="relative bg-white p-10 rounded-3xl text-center max-w-sm shadow-2xl">
-                                <div className="text-6xl mb-4">✅</div>
-                                <h2 className="text-2xl font-bold mb-2">تم استلام طلبك!</h2>
-                                <p className="text-slate-500 mb-6">سنتصل بك قريباً لتأكيد التوصيل.</p>
-                                <button onClick={() => setOrderComplete(false)} className="bg-blue-600 text-white px-8 py-2 rounded-full font-bold">حسناً</button>
+                            <div className="absolute inset-0 bg-black/70" onClick={() => setOrderComplete(false)}></div>
+                            <div className="relative bg-white p-8 rounded-2xl text-center">
+                                <h2 className="text-xl font-bold">تم تحويلك للواتساب! ✅</h2>
+                                <p className="text-gray-500 mt-2">يرجى الضغط على "إرسال" في التطبيق.</p>
+                                <button onClick={() => setOrderComplete(false)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg">إغلاق</button>
                             </div>
                         </div>
                     )}
-                    
-                    <footer className="bg-slate-900 text-slate-500 py-10 text-center text-sm">
-                        <p>&copy; 2026 سوق بلس - جميع الحقوق محفوظة | حماية أمنية مشددة</p>
-                    </footer>
                 </div>
             );
         }
